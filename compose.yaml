@@ -1,0 +1,61 @@
+services:
+  php:
+    image: ${IMAGES_PREFIX:-}app-php
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-localhost}, php:80
+      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      TRUSTED_HOSTS: ^${SERVER_NAME:-example\.com|localhost}|php$$
+      DATABASE_URL: mysql://${MYSQL_USER:-app}:${MYSQL_PASSWORD:-!ChangeMe!}@database:3306/${MYSQL_DB:-tele-clinique}?serverVersion=${MYSQL_VERSION:-10.11.2-MariaDB}&charset=utf8
+      MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
+      MERCURE_PUBLIC_URL: https://${SERVER_NAME:-localhost}/.well-known/mercure
+      MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      SYMFONY_VERSION: ${SYMFONY_VERSION:-}
+      STABILITY: ${STABILITY:-stable}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - target: 80
+        published: ${HTTP_PORT:-80}
+        protocol: tcp
+      - target: 443
+        published: ${HTTPS_PORT:-443}
+        protocol: tcp
+      - target: 443
+        published: ${HTTP3_PORT:-443}
+        protocol: udp
+
+  database:
+    image: mariadb:10.5
+    environment:
+      MYSQL_DATABASE: tele-clinique
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-!ChangeMe!}
+      MYSQL_USER: ${MYSQL_USER:-app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-!ChangeMe!}
+    volumes:
+      - database_data:/var/lib/mysql:rw
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: database
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-!ChangeMe!}
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  database_data:
+  phpmyadmin_data:
+
+###> symfony/mercure-bundle ###
+###< symfony/mercure-bundle ###
+
+###> doctrine/doctrine-bundle ###
+###< doctrine/doctrine-bundle ###
